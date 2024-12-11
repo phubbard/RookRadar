@@ -29,9 +29,22 @@
 		B30695E62D0628FC001363BD /* RookRadar3UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RookRadar3UITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		B34E0EEF2D0934DB00D13174 /* Exceptions for "RookRadar3" folder in "RookRadar3" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = B30695C92D0628FB001363BD /* RookRadar3 */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		B30695CC2D0628FB001363BD /* RookRadar3 */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				B34E0EEF2D0934DB00D13174 /* Exceptions for "RookRadar3" folder in "RookRadar3" target */,
+			);
 			path = RookRadar3;
 			sourceTree = "<group>";
 		};
@@ -399,8 +412,10 @@
 				DEVELOPMENT_TEAM = NSR65JVW9F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RookRadar3/Info.plist;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "We need Bluetooth access to detect nearby beacons.";
-				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "We need your location to detect nearby beacons.";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "We need your location to detect nearby beacons. Please.\n";
+				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "We need your location to detect nearby beacons. Please.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We need your location to detect nearby beacons. Please. Really.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -431,8 +446,10 @@
 				DEVELOPMENT_TEAM = NSR65JVW9F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RookRadar3/Info.plist;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "We need Bluetooth access to detect nearby beacons.";
-				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "We need your location to detect nearby beacons.";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "We need your location to detect nearby beacons. Please.\n";
+				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "We need your location to detect nearby beacons. Please.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We need your location to detect nearby beacons. Please. Really.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
