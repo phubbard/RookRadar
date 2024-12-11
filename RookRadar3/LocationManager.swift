@@ -64,10 +64,12 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
 
     // Handle ranging beacons
     func locationManager(_ manager: CLLocationManager, didRange beacons: [CLBeacon], satisfying beaconConstraint: CLBeaconIdentityConstraint) {
+        let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .long)
+
         for beacon in beacons {
             DispatchQueue.main.async {
                 let proximity = self.proximityString(for: beacon.proximity)
-                self.beaconEvents.append("Ranged beacon: UUID \(beaconConstraint.uuid), Proximity: \(proximity)")
+                self.beaconEvents.append("Ranged beacon: UUID \(beaconConstraint.uuid), Proximity: \(proximity) at \(timestamp)")
             }
         }
     }
