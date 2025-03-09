@@ -4,8 +4,8 @@ import Foundation
 import FoundationNetworking
 #endif
 
-print("Swift GitHub API Demo")
-print("Fetching the latest commit from a public repository...")
+print("Swift GitHub API Demo - Simple Version")
+print("Fetching from GitHub API...")
 
 // Define the GitHub repository to query
 let owner = "apple"
@@ -18,138 +18,87 @@ guard let url = URL(string: urlString) else {
     exit(1)
 }
 
-print("? Request URL: \(urlString)")
+print("[DEBUG] Request URL: \(urlString)")
+
+#if canImport(FoundationNetworking)
+print("[DEBUG] Using FoundationNetworking module")
+#else
+print("[DEBUG] Using standard Foundation module")
+#endif
 
 // Create a URLRequest with appropriate headers
 var request = URLRequest(url: url)
 request.addValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
 request.addValue("Swift-API-Demo", forHTTPHeaderField: "User-Agent")
 
-print("? Making URLSession request with headers: \(request.allHTTPHeaderFields ?? [:])")
+print("[DEBUG] Making request with headers: \(request.allHTTPHeaderFields ?? [:])")
 
-// Create a semaphore to make the async call synchronous
+// Create a semaphore for synchronous operation
 let semaphore = DispatchSemaphore(value: 0)
 var responseData: Data?
 var responseError: Error?
 
-// Create URLSession task
+// Create the URLSession task
+print("[DEBUG] Creating URLSession task")
 let task = URLSession.shared.dataTask(with: request) { (data, response, error) in
-    defer { semaphore.signal() }
+    print("[DEBUG] Entered completion handler")
     
+    // Log the error if present
     if let error = error {
+        print("[ERROR] \(error.localizedDescription)")
         responseError = error
-        return
     }
     
+    // Log the response status
     if let httpResponse = response as? HTTPURLResponse {
-        print("? Received HTTP response status: \(httpResponse.statusCode)")
+        print("[DEBUG] HTTP Status: \(httpResponse.statusCode)")
     }
     
+    // Store the data
     responseData = data
+    
+    // Signal completion
+    print("[DEBUG] Signaling semaphore")
+    semaphore.signal()
 }
 
 // Start the task
-print("? Starting URLSession task")
+print("[DEBUG] Starting task")
 task.resume()
 
-// Wait for completion
-print("? Waiting for response...")
-semaphore.wait()
+// Set a custom session configuration
+print("[DEBUG] Updating URLSession configuration")
+URLSession.shared.configuration.timeoutIntervalForRequest = 10.0
 
+// Wait with timeout
+print("[DEBUG] Waiting for response...")
+let waitResult = semaphore.wait(timeout: .now() + 10.0)
+
+// Check for timeout
+if waitResult == .timedOut {
+    print("[ERROR] Request timed out")
+    exit(1)
+}
+
+// Check for errors
 if let error = responseError {
-    print("?? Network request failed: \(error)")
+    print("[ERROR] Request failed: \(error)")
     exit(1)
 }
 
-guard let outputData = responseData else {
-    print("?? No data received")
-    exit(1)
-}
-
-print("? Received \(outputData.count) bytes of data")
-
-// Print the raw JSON response
-if let jsonString = String(data: outputData, encoding: .utf8) {
-    print("? Raw JSON response:")
-    print(jsonString)
-} else {
-    print("?? Could not convert response data to string")
-}
-
-do {
-    // Parse JSON
-    print("? Attempting to parse JSON...")
-    let jsonObject = try JSONSerialization.jsonObject(with: outputData)
-    print("? JSON parsed successfully, type: \(type(of: jsonObject))")
+// Process data if available
+if let data = responseData {
+    print("[DEBUG] Received \(data.count) bytes")
     
-    if let jsonArray = jsonObject as? [[String: Any]] {
-        print("? JSON successfully cast to array of dictionaries with \(jsonArray.count) items")
-        
-        if let commit = jsonArray.first {
-            print("\nLatest Commit Details:")
-            print("----------------------")
-            
-            // Extract commit details
-            if let sha = commit["sha"] as? String {
-                print("SHA: \(sha)")
-            } else {
-                print("?? Could not extract SHA")
-            }
-            
-            if let commitDetails = commit["commit"] as? [String: Any] {
-                print("? Found commit details dictionary")
-                
-                if let message = commitDetails["message"] as? String {
-                    // Get just the first line of the commit message
-                    let firstLine = message.split(separator: "\n").first ?? ""
-                    print("Message: \(firstLine)")
-                } else {
-                    print("?? Could not extract commit message")
-                }
-                
-                if let authorInfo = commitDetails["author"] as? [String: Any] {
-                    print("? Found author info dictionary")
-                    if let name = authorInfo["name"] as? String,
-                       let date = authorInfo["date"] as? String {
-                        print("Author: \(name)")
-                        print("Date: \(date)")
-                    } else {
-                        print("?? Could not extract author name or date")
-                    }
-                } else {
-                    print("?? Could not extract author info")
-                }
-            } else {
-                print("?? Could not extract commit details")
-            }
-            
-            // Get the HTML URL
-            if let htmlUrl = commit["html_url"] as? String {
-                print("URL: \(htmlUrl)")
-            } else {
-                print("?? Could not extract HTML URL")
-            }
-        } else {
-            print("?? Array is empty, no commits found")
-        }
+    if let responseString = String(data: data, encoding: .utf8) {
+        print("\n[RESPONSE]")
+        print(responseString)
     } else {
-        print("?? Failed to parse JSON as expected array structure")
-        print("? Actual type: \(type(of: jsonObject))")
-        
-        // Try to inspect the actual structure
-        if let dictionary = jsonObject as? [String: Any] {
-            print("? JSON is a dictionary with keys: \(dictionary.keys.joined(separator: ", "))")
-            
-            // Check if it's an error message from GitHub
-            if let message = dictionary["message"] as? String {
-                print("?? GitHub API message: \(message)")
-            }
-        }
+        print("[ERROR] Could not convert response to string")
     }
-} catch {
-    print("?? JSON parsing error: \(error)")
-    if let jsonString = String(data: outputData, encoding: .utf8) {
-        print("? Raw JSON response: \(jsonString)")
-    }
+} else {
+    print("[ERROR] No data received")
 }
+
+print("[DEBUG] Complete")
 
