@@ -1,99 +1,81 @@
 //
-//  LocationManager.swift
+//  LocationManager 2.swift
 //  RookRadar3
 //
-//  Created by Paul Hubbard on 12/8/24.
+//  Created by Paul Hubbard on 1/5/25.
 //
-
 
 
 import Foundation
 import CoreLocation
+import SwiftData
 
 class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     private var locationManager = CLLocationManager()
     
     @Published var location: String = "Idle"
-    @Published var beaconEvents: [String] = [] // Logs for beacon events
-
-    override init() {
+    @Published var beaconEvents: [BeaconEvent] = [] // Logs for beacon events
+    
+    private var context: ModelContext // SwiftData context for persistence
+    
+    init(context: ModelContext) {
+        self.context = context
         super.init()
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
-        locationManager.requestAlwaysAuthorization() // Required for iBeacon monitoring
+        locationManager.requestAlwaysAuthorization()
         locationManager.startUpdatingLocation()
+        fetchBeaconEvents()
     }
-    
-    // Add iBeacon region monitoring
-    func startMonitoringBeacons() {
-        let beaconRegions = [
-            CLBeaconRegion(uuid: UUID(uuidString: "426C7565-4368-6172-6D42-6561636F6E73")!, major: 3838, minor: 4949, identifier: "Home"),
-            CLBeaconRegion(uuid: UUID(uuidString: "426C7565-4368-6172-6D42-6561636F6E74")!, identifier: "Office"),
-            CLBeaconRegion(uuid: UUID(uuidString: "426C7565-4368-6172-6D42-6561636F6E75")!, identifier: "Car")
-        ]
 
-        for region in beaconRegions {
-            locationManager.startMonitoring(for: region)
-            locationManager.startRangingBeacons(satisfying: CLBeaconIdentityConstraint(uuid: region.uuid, major: region.major?.uint16Value ?? 0,
-                                                                                       minor: region.minor?.uint16Value ?? 0))
+    func fetchBeaconEvents() {
+        let fetchRequest = FetchDescriptor<BeaconEvent>()
+        do {
+            let fetchedEvents = try context.fetch(fetchRequest)
+            DispatchQueue.main.async {
+                self.beaconEvents = fetchedEvents
+            }
+        } catch {
+            print("Error fetching beacon events: \(error)")
         }
-        location = "Beacon monitoring started..."
     }
-    
+
+    private func saveEvent(_ message: String) {
+        let event = BeaconEvent(timestamp: Date(), message: message)
+        context.insert(event)
+        do {
+            try context.save()
+            DispatchQueue.main.async {
+                self.beaconEvents.append(event)
+            }
+        } catch {
+            print("Error saving beacon event: \(error)")
+        }
+    }
+
     // Handle entering a beacon region
     func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
         if let beaconRegion = region as? CLBeaconRegion {
-            DispatchQueue.main.async {
-                let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .long)
-                DispatchQueue.main.async {
-                    self.beaconEvents.append("Entered region: \(beaconRegion.identifier) at \(timestamp)")
-                }
-            }
+            let message = "Entered \(beaconRegion.identifier)"
+            saveEvent(message)
         }
     }
 
     // Handle exiting a beacon region
     func locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion) {
         if let beaconRegion = region as? CLBeaconRegion {
-            let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .long)
-            DispatchQueue.main.async {
-                self.beaconEvents.append("Exited region: \(beaconRegion.identifier) at \(timestamp)")
-            }
+            let message = "Exited \(beaconRegion.identifier)"
+            saveEvent(message)
         }
     }
 
     // Handle ranging beacons
     func locationManager(_ manager: CLLocationManager, didRange beacons: [CLBeacon], satisfying beaconConstraint: CLBeaconIdentityConstraint) {
-        let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .long)
-
+        let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .medium)
         for beacon in beacons {
-            DispatchQueue.main.async {
-                let proximity = self.proximityString(for: beacon.proximity)
-                self.beaconEvents.append("Ranged beacon: UUID \(beaconConstraint.uuid), Proximity: \(proximity) at \(timestamp)")
-            }
-        }
-    }
-
-    func stopMonitoringBeacons() {
-        locationManager.monitoredRegions.forEach { region in
-            if let beaconRegion = region as? CLBeaconRegion {
-                locationManager.stopMonitoring(for: beaconRegion)
-            }
-        }
-
-        locationManager.rangedBeaconConstraints.forEach { constraint in
-            locationManager.stopRangingBeacons(satisfying: constraint)
-        }
-    }
-    
-    private func proximityString(for proximity: CLProximity) -> String {
-        switch proximity {
-        case .immediate: return "Immediate"
-        case .near: return "Near"
-        case .far: return "Far"
-        default: return "Unknown"
+            let proximity = self.proximityString(for: beacon.proximity)
+            let message = "Ranged: accuracy: \(beacon.accuracy) RSSI: \(beacon.rssi) Proximity: \(proximity) at \(timestamp)"
+            saveEvent(message)
         }
     }
 }
-
-
