@@ -5,57 +5,37 @@
 //  Created by Paul Hubbard on 1/5/25.
 //
 
-
 import SwiftUI
-import SwiftData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var context: ModelContext
-    @StateObject private var locationManager: LocationManager
-    @State private var isMonitoring = false // Track monitoring state
-
-    init() {
-        let manager = LocationManager(context: ModelContext.default)
-        _locationManager = StateObject(wrappedValue: manager)
-    }
+    @StateObject private var locationManager = LocationManager()
+    @State private var isMonitoring = false
 
     var body: some View {
-        VStack {
-            Text("Beacon Events")
+        VStack(spacing: 20) {
+            Text("Beacon Monitoring Demo")
                 .font(.headline)
+
+            Toggle("Monitoring", isOn: $isMonitoring)
+                .onChange(of: isMonitoring) { newValue in
+                    if newValue {
+                        locationManager.startMonitoring()
+                    } else {
+                        locationManager.stopMonitoring()
+                    }
+                }
                 .padding()
 
-            List(locationManager.beaconEvents, id: \.id) { event in
+            // Show a list of all the logged events
+            List(locationManager.eventLogs) { event in
                 VStack(alignment: .leading) {
-                    Text(event.message)
-                    Text(event.timestamp, style: .time)
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
+                    Text("\(event.timestamp.formatted(date: .abbreviated, time: .standard))")
+                    Text("\(event.eventType) - \(event.regionIdentifier)")
+                        .bold()
                 }
             }
-            .padding()
-
-            Spacer()
-
-            Button(action: {
-                toggleMonitoring()
-            }) {
-                Text(isMonitoring ? "Stop Monitoring" : "Start Monitoring")
-                    .padding()
-                    .background(isMonitoring ? Color.red : Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
-            }
+            .listStyle(.plain)
         }
         .padding()
-    }
-
-    private func toggleMonitoring() {
-        if isMonitoring {
-            locationManager.stopMonitoringBeacons()
-        } else {
-            locationManager.startMonitoringBeacons()
-        }
-        isMonitoring.toggle()
     }
 }
