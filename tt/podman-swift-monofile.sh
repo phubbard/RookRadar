@@ -7,7 +7,7 @@ PODMAN_CONFIG="pdvm-rbw"  # Your podman configuration
 
 echo "Running Swift code in a temporary container..."
 podman -c "$PODMAN_CONFIG" run --rm \
-    -v "$(pwd)/Study:/app" \
+    -v "./Study:/app" \
     "$CONTAINER_IMAGE" \
     swift "/app/study-swift-monofile/monofile.swift"
 
