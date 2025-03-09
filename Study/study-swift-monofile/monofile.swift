@@ -24,7 +24,6 @@ print("[CONFIG] Request URL: \(urlString)")
 print("[CONFIG] Creating custom URLSession configuration")
 let config = URLSessionConfiguration.default
 config.timeoutIntervalForRequest = 30.0  // Increase timeout to 30 seconds
-config.httpMaximumConnectionsPerHost = 5
 config.requestCachePolicy = .reloadIgnoringLocalCacheData
 config.httpShouldSetCookies = false
 config.httpAdditionalHeaders = [
@@ -32,7 +31,7 @@ config.httpAdditionalHeaders = [
     "User-Agent": "Swift-API-Demo-Enhanced"
 ]
 
-print("[CONFIG] URLSession configuration: timeoutInterval=\(config.timeoutIntervalForRequest), maxConnections=\(config.httpMaximumConnectionsPerHost)")
+print("[CONFIG] URLSession configuration: timeoutInterval=\(config.timeoutIntervalForRequest)")
 
 // Create a dedicated URLSession with our configuration
 print("[CONFIG] Creating URLSession with custom configuration")
@@ -44,8 +43,6 @@ print("  - Using FoundationNetworking module")
 #else
 print("  - Using standard Foundation module")
 #endif
-
-print("  - Swift version: \(Swift.version)")
 
 // Create a direct URLRequest (without using the session's headers to be explicit)
 print("[REQUEST] Creating URLRequest")
