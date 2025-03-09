@@ -25,6 +25,7 @@ let process = Process()
 process.executableURL = URL(fileURLWithPath: "/usr/bin/curl")
 process.arguments = [
     "-s",
+    "-L",  // Add -L flag to follow redirects
     "-H", "Accept: application/vnd.github.v3+json",
     "-H", "User-Agent: Swift-API-Demo",
     urlString
