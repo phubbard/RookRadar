@@ -1,4 +1,8 @@
+// Import necessary modules
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 print("Swift GitHub API Demo")
 print("Fetching the latest commit from a public repository...")
@@ -8,37 +12,36 @@ let owner = "apple"
 let repo = "swift"
 
 // Create URL for GitHub API request
-let url = URL(string: "https://api.github.com/repos/\(owner)/\(repo)/commits?per_page=1")!
+let urlString = "https://api.github.com/repos/\(owner)/\(repo)/commits?per_page=1"
+guard let url = URL(string: urlString) else {
+    print("Invalid URL")
+    exit(1)
+}
 
-// Create a semaphore to wait for the async network request
-let semaphore = DispatchSemaphore(value: 0)
+// Use curl command-line instead of URLSession for better compatibility
+let process = Process()
+process.executableURL = URL(fileURLWithPath: "/usr/bin/curl")
+process.arguments = [
+    "-s",
+    "-H", "Accept: application/vnd.github.v3+json",
+    "-H", "User-Agent: Swift-API-Demo",
+    urlString
+]
 
-// Create the request
-var request = URLRequest(url: url)
-request.httpMethod = "GET"
-request.addValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
-request.addValue("Swift-API-Demo", forHTTPHeaderField: "User-Agent")
+let outputPipe = Pipe()
+process.standardOutput = outputPipe
 
-// Data task to fetch from GitHub
-let task = URLSession.shared.dataTask(with: request) { (data, response, error) in
-    defer { semaphore.signal() }
+do {
+    try process.run()
+    process.waitUntilExit()
     
-    if let error = error {
-        print("Error: \(error.localizedDescription)")
-        return
-    }
+    let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
     
-    guard let httpResponse = response as? HTTPURLResponse else {
-        print("Invalid response")
-        return
-    }
-    
-    print("Response status code: \(httpResponse.statusCode)")
-    
-    if httpResponse.statusCode == 200, let data = data {
+    if process.terminationStatus == 0 {
+        // Successfully fetched data
         do {
             // Parse JSON
-            if let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[String: Any]],
+            if let jsonArray = try JSONSerialization.jsonObject(with: outputData) as? [[String: Any]],
                let commit = jsonArray.first {
                 
                 print("\nLatest Commit Details:")
@@ -68,21 +71,23 @@ let task = URLSession.shared.dataTask(with: request) { (data, response, error) i
                 if let htmlUrl = commit["html_url"] as? String {
                     print("URL: \(htmlUrl)")
                 }
+            } else {
+                print("Failed to parse JSON as expected array structure")
             }
         } catch {
-            print("JSON parsing error: \(error.localizedDescription)")
+            print("JSON parsing error: \(error)")
+            if let jsonString = String(data: outputData, encoding: .utf8) {
+                print("Raw JSON response: \(jsonString)")
+            }
         }
     } else {
-        print("Failed to get data")
-        if let data = data, let errorMessage = String(data: data, encoding: .utf8) {
-            print("Error message: \(errorMessage)")
+        print("Command failed with status: \(process.terminationStatus)")
+        if let errorOutput = String(data: outputData, encoding: .utf8) {
+            print("Error output: \(errorOutput)")
         }
     }
+} catch {
+    print("Failed to run curl command: \(error)")
 }
 
-// Start the request
-task.resume()
-
-// Wait for the request to complete
-_ = semaphore.wait(timeout: .distantFuture)
 
