@@ -26,15 +26,14 @@ struct ContentView: View {
                 }
                 .padding()
 
-            // Show a list of all the logged events
-            List(locationManager.eventLogs) { event in
+            // Show a list of all the logged events, newest first
+            List(locationManager.eventLogs.reversed()) { event in
                 VStack(alignment: .leading) {
                     Text("\(event.timestamp.formatted(date: .abbreviated, time: .standard))")
                     Text("\(event.eventType) - \(event.regionIdentifier)")
                         .bold()
                 }
-            }
-            .listStyle(.plain)
+            }            .listStyle(.plain)
         }
         .padding()
     }
